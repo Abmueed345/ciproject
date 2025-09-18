@@ -2,71 +2,68 @@ name: CI Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - dev
+    branches: [main, dev]
   pull_request:
-    branches:
-      - main
-      - dev
+    branches: [main, dev]
 
 jobs:
   ci:
+    name: Run Lint & Tests
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 18
 
       - name: Install dependencies
         run: npm install
 
-      - name: Run ESLint
-        run: npx eslint .
+      - name: Run Linter
+        run: npm run lint
 
-      - name: Run tests
+      - name: Run Tests
         run: npm test
 
-      - name: Upload test artifacts
+      - name: Build project
+        run: npm run build
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: test-report
-          path: |
-            tests/**/*.test.js
-            coverage/
+          name: build-artifact
+          path: build/
 
   deploy_qa:
-    runs-on: ubuntu-latest
+    name: Deploy to QA
     needs: ci
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/dev'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
 
-      - name: Download test artifacts
+    steps:
+      - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: test-report
+          name: build-artifact
 
-      - name: Deploy to QA
-        run: echo "Deploying to QA environment..."
+      - name: Simulate QA deploy
+        run: echo "🚀 Deploying to QA environment..."
 
   deploy_prod:
-    runs-on: ubuntu-latest
+    name: Deploy to Production
     needs: ci
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
 
-      - name: Download test artifacts
+    steps:
+      - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: test-report
+          name: build-artifact
 
-      - name: Deploy to Production
-        run: echo "Deploying to Production environment..."
+      - name: Simulate Production deploy
+        run: echo "🚀 Deploying to Production environment..."
